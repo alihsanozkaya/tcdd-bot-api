@@ -12,6 +12,10 @@ app.use(express.json());
 
 await connectDB();
 
+app.get("/", (req, res) => {
+    res.send("Server is up!");
+})
+
 app.use("/api/searches", searchesRoute);
 app.use("/api/seats", seatsRoute);
 app.use("/api/stations", stationsRoute);
