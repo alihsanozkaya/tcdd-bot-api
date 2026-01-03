@@ -20,6 +20,13 @@ export const createSearch = async ({
   travelDate,
   tripList,
 }) => {
+
+  if (fromStationCode == toStationCode) {
+    const err = new Error("Kalkış ve varış istasyonları aynı olamaz");
+    err.code = "SAME_STATION_ERROR";
+    throw err;
+  }
+
   const parsedDate = parseTravelDate(travelDate);
   if (!parsedDate) throw new Error("Tarih formatı geçersiz (DD MM YYYY)");
 
