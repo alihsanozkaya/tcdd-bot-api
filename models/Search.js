@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
 
+const tripSchema = new mongoose.Schema({
+  tripId: { type: String, required: true },
+  departureTime: { type: String, required: true }
+}, { _id: false });
+
 const searchSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -19,7 +24,7 @@ const searchSchema = new mongoose.Schema({
     ref: "Seat",
     required: true,
   },
-  tripList: { type: [String], required: true },
+  tripList: [tripSchema],
   isActive: { type: Boolean, default: true },
   found: { type: Boolean, default: false },
   lastCheckedAt: { type: Date, default: null },

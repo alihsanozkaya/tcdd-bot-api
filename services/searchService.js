@@ -20,7 +20,6 @@ export const createSearch = async ({
   travelDate,
   tripList,
 }) => {
-
   if (fromStationCode == toStationCode) {
     const err = new Error("Kalkış ve varış istasyonları aynı olamaz");
     err.code = "SAME_STATION_ERROR";
@@ -46,6 +45,7 @@ export const createSearch = async ({
     err.code = "ACTIVE_SEARCH_LIMIT";
     throw err;
   }
+  const tripIds = tripList.map((t) => t.tripId);
 
   const exists = await Search.findOne({
     userId,
@@ -55,10 +55,8 @@ export const createSearch = async ({
     travelDate,
     isActive: true,
     found: false,
-    tripList: {
-      $all: tripList,
-      $size: tripList.length,
-    },
+    "tripList.tripId": { $all: tripIds },
+    tripList: { $size: tripList.length },
   }).lean();
 
   if (exists) {
@@ -144,17 +142,12 @@ export const refreshSearchTripList = async (searchId) => {
   const search = await Search.findById(searchId);
   if (!search || !search.isActive) return null;
 
-  if (!search.travelDate || !Array.isArray(search.tripList)) return search;
-
   const [day, month, year] = search.travelDate.split(" ").map(Number);
   const now = new Date();
-
   const FIFTEEN_MINUTES = 15 * 60 * 1000;
 
   const validTrips = search.tripList.filter((trip) => {
-    if (!trip) return false;
-
-    const [hour, minute] = trip.split(":").map(Number);
+    const [hour, minute] = trip.departureTime.split(":").map(Number);
     const tripDate = new Date(year, month - 1, day, hour, minute);
 
     return tripDate.getTime() - now.getTime() > FIFTEEN_MINUTES;
