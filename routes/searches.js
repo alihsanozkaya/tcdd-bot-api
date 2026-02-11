@@ -9,6 +9,7 @@ import {
   stopExpiredSearches,
   stopSearch,
 } from "../services/searchService.js";
+import { searchTrains } from "../services/tcddService.js";
 
 const router = express.Router();
 
@@ -18,6 +19,15 @@ router.get("/", async (req, res) => {
     return res.json(searches);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+router.post("/preview", async (req, res) => {
+  try {
+    const trips = await searchTrains(req.body);
+    return res.json(trips);
+  } catch (err) {
+    return res.status(400).json({ message: err.message });
   }
 });
 
