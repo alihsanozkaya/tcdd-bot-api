@@ -45,7 +45,7 @@ export const createSearch = async ({
     err.code = "ACTIVE_SEARCH_LIMIT";
     throw err;
   }
-  const tripIds = tripList.map((t) => t.tripId);
+  const trainIds = tripList.map((t) => t.trainId);
 
   const exists = await Search.findOne({
     userId,
@@ -55,7 +55,7 @@ export const createSearch = async ({
     travelDate,
     isActive: true,
     found: false,
-    "tripList.tripId": { $all: tripIds },
+    "tripList.trainId": { $all: trainIds },
     tripList: { $size: tripList.length },
   }).lean();
 
@@ -120,47 +120,15 @@ export const stopErrorSearch = async (searchId) => {
   return search;
 };
 
-export const stopExpiredSearches = async () => {
-  const now = new Date();
-
-  const activeSearches = await Search.find({ isActive: true });
-
-  for (const search of activeSearches) {
-    if (!search.travelDate) continue;
-
-    const travelDateAsDate = parseTravelDate(search.travelDate);
-
-    if (travelDateAsDate < now) {
-      search.isActive = false;
-      search.stopReason = "DATE_PASSED";
-      await search.save();
-    }
-  }
-};
-
-export const refreshSearchTripList = async (searchId) => {
+export const stopDatePassedSearch = async (searchId) => {
   const search = await Search.findById(searchId);
-  if (!search || !search.isActive) return null;
+  if (!search) throw new Error("Arama bulunamadı");
 
-  const [day, month, year] = search.travelDate.split(" ").map(Number);
-  const now = new Date();
-  const FIFTEEN_MINUTES = 15 * 60 * 1000;
+  if (!search.isActive) throw new Error("Bu arama zaten durdurulmuş");
 
-  const validTrips = search.tripList.filter((trip) => {
-    const [hour, minute] = trip.departureTime.split(":").map(Number);
-    const tripDate = new Date(year, month - 1, day, hour, minute);
-
-    return tripDate.getTime() - now.getTime() > FIFTEEN_MINUTES;
-  });
-
-  if (validTrips.length == 0) {
-    search.isActive = false;
-    search.stopReason = "DATE_PASSED";
-  } else {
-    search.tripList = validTrips;
-    search.stopReason = null;
-  }
-
+  search.isActive = false;
+  search.stopReason = "DATE_PASSED";
   await search.save();
+
   return search;
 };

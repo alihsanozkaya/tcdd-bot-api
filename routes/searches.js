@@ -4,9 +4,8 @@ import {
   foundSearch,
   getActiveSearchesByUser,
   getAllActiveSearches,
-  refreshSearchTripList,
+  stopDatePassedSearch,
   stopErrorSearch,
-  stopExpiredSearches,
   stopSearch,
 } from "../services/searchService.js";
 import { searchTrains } from "../services/tcddService.js";
@@ -84,19 +83,10 @@ router.post("/stopErrorSearch", async (req, res) => {
   }
 });
 
-router.post("/stopExpired", async (req, res) => {
-  try {
-    await stopExpiredSearches();
-    return res.json(true);
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
-  }
-});
-
-router.post("/refreshSearchTrips", async (req, res) => {
+router.post("/stopDatePassed", async (req, res) => {
   try {
     const { id } = req.body;
-    await refreshSearchTripList(id);
+    await stopDatePassedSearch(id);
     return res.json(true);
   } catch (err) {
     return res.status(400).json({ message: err.message });

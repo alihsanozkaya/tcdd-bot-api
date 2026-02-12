@@ -1,9 +1,12 @@
 import mongoose from "mongoose";
 
-const tripSchema = new mongoose.Schema({
-  trainId: { type: Number, required: true },
-  departureTime: { type: String, required: true }
-}, { _id: false });
+const tripSchema = new mongoose.Schema(
+  {
+    trainId: { type: Number, required: true },
+    departureTime: { type: String, required: true },
+  },
+  { _id: false },
+);
 
 const searchSchema = new mongoose.Schema({
   userId: {
