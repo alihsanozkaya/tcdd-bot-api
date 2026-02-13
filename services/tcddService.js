@@ -1,6 +1,10 @@
 import axios from "axios";
 
-export async function searchTrains({ fromStationId, toStationId, departureDate }) {
+export async function searchTrains({
+  fromStationId,
+  toStationId,
+  departureDate,
+}) {
   const body = {
     searchRoutes: [
       {
@@ -13,11 +17,22 @@ export async function searchTrains({ fromStationId, toStationId, departureDate }
   };
   const { data } = await axios.post(process.env.TCDD_API_URL, body, {
     headers: {
-      Authorization: `Bearer ${process.env.TCDD_TOKEN}`,
+      Accept: "application/json, text/plain, */*",
+      "Accept-Language": "tr",
+      Authorization: process.env.TCDD_TOKEN,
+      Connection: "keep-alive",
       "Content-Type": "application/json",
-      "unit-id": "3895",
+      Origin: "https://ebilet.tcddtasimacilik.gov.tr",
+      "Sec-Fetch-Dest": "empty",
+      "Sec-Fetch-Mode": "cors",
+      "Sec-Fetch-Site": "same-site",
       "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+      "sec-ch-ua":
+        '"Not(A:Brand";v="8", "Chromium";v="144", "Google Chrome";v="144"',
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": '"macOS"',
+      "unit-id": "3895",
     },
     timeout: 15000,
   });
@@ -38,7 +53,6 @@ export function toTcddApiDate(userDate) {
 
   return `${dd}-${mm}-${yyyy} 21:00:00`;
 }
-
 
 function formatDuration(startISO, endISO) {
   const diffMs = new Date(endISO) - new Date(startISO);
