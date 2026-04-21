@@ -26,13 +26,15 @@ export async function searchTrains({
       "Sec-Fetch-Dest": "empty",
       "Sec-Fetch-Mode": "cors",
       "Sec-Fetch-Site": "same-site",
+      Referer: "https://ebilet.tcddtasimacilik.gov.tr/",
       "User-Agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
+      "unit-id": "3895",
       "sec-ch-ua":
-        '"Not(A:Brand";v="8", "Chromium";v="144", "Google Chrome";v="144"',
+        '"Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"',
       "sec-ch-ua-mobile": "?0",
       "sec-ch-ua-platform": '"macOS"',
-      "unit-id": "3895",
+      Cookie: "mycustomtraceid=rBiqDGm8ZXWjO4vaXsF5Ag==",
     },
     timeout: 15000,
   });
