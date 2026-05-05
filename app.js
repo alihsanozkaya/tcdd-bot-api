@@ -19,5 +19,5 @@ app.use("/api/seats", seatsRoute);
 app.use("/api/stations", stationsRoute);
 app.use("/api/users", usersRoute);
 
-// const port = process.env.PORT || 5003;
-// app.listen(port, '0.0.0.0', () => console.log(`Server başlatıldı ${port}`));
+const port = process.env.PORT || 5003;
+app.listen(port, '0.0.0.0', () => console.log(`Server başlatıldı ${port}`));
