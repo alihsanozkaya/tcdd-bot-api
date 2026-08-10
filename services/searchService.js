@@ -1,6 +1,20 @@
 import Search from "../models/Search.js";
 import { isPastDate, parseTravelDate } from "../utils/dateUtils.js";
 
+const notFoundError = () => {
+  const err = new Error("Arama bulunamadı");
+  err.statusCode = 404;
+  err.code = "SEARCH_NOT_FOUND";
+  return err;
+};
+
+const badRequest = (message, code) => {
+  const err = new Error(message);
+  err.statusCode = 400;
+  if (code) err.code = code;
+  return err;
+};
+
 export const getAllActiveSearches = async () => {
   return Search.find({ isActive: true });
 };
@@ -20,17 +34,37 @@ export const createSearch = async ({
   travelDate,
   tripList,
 }) => {
+  if (!userId || !fromStationCode || !toStationCode || !seatType) {
+    throw badRequest(
+      "userId, fromStationCode, toStationCode ve seatType zorunludur",
+      "INVALID_BODY",
+    );
+  }
+
   if (fromStationCode == toStationCode) {
-    const err = new Error("Kalkış ve varış istasyonları aynı olamaz");
-    err.code = "SAME_STATION_ERROR";
-    throw err;
+    throw badRequest(
+      "Kalkış ve varış istasyonları aynı olamaz",
+      "SAME_STATION_ERROR",
+    );
   }
 
   const parsedDate = parseTravelDate(travelDate);
-  if (!parsedDate) throw new Error("Tarih formatı geçersiz (DD MM YYYY)");
+  if (!parsedDate) throw badRequest("Tarih formatı geçersiz (DD MM YYYY)");
 
   if (isPastDate(travelDate))
-    throw new Error("Geçmiş tarih için arama başlatılamaz");
+    throw badRequest("Geçmiş tarih için arama başlatılamaz");
+
+  if (!Array.isArray(tripList) || tripList.length === 0) {
+    throw badRequest("En az bir sefer seçilmelidir", "EMPTY_TRIP_LIST");
+  }
+
+  const invalidTrip = tripList.some(
+    (trip) => !Number.isFinite(Number(trip?.trainId)) || !trip?.departureTime,
+  );
+
+  if (invalidTrip) {
+    throw badRequest("Sefer listesi geçersiz", "INVALID_TRIP_LIST");
+  }
 
   const MAX_ACTIVE_SEARCH = 5;
 
@@ -41,11 +75,13 @@ export const createSearch = async ({
   });
 
   if (activeSearchCount >= MAX_ACTIVE_SEARCH) {
-    const err = new Error("Aynı anda en fazla 5 aktif arama başlatılabilir");
-    err.code = "ACTIVE_SEARCH_LIMIT";
-    throw err;
+    throw badRequest(
+      "Aynı anda en fazla 5 aktif arama başlatılabilir",
+      "ACTIVE_SEARCH_LIMIT",
+    );
   }
-  const trainIds = tripList.map((t) => t.trainId);
+
+  const trainIds = tripList.map((t) => Number(t.trainId));
 
   const exists = await Search.findOne({
     userId,
@@ -61,9 +97,10 @@ export const createSearch = async ({
 
   if (exists) {
     const err = new Error(
-      "Bu rota, tarih, koltuk tipi ve seferler için zaten aktif bir arama var"
+      "Bu rota, tarih, koltuk tipi ve seferler için zaten aktif bir arama var",
     );
     err.statusCode = 409;
+    err.code = "DUPLICATE_SEARCH";
     throw err;
   }
 
@@ -73,62 +110,38 @@ export const createSearch = async ({
     toStationCode,
     seatType,
     travelDate,
-    tripList,
+    tripList: tripList.map((t) => ({
+      trainId: Number(t.trainId),
+      departureTime: String(t.departureTime),
+    })),
   });
 
   await search.save();
   return search;
 };
 
-export const foundSearch = async (searchId) => {
+const closeSearch = async (searchId, stopReason, { found = false } = {}) => {
   const search = await Search.findById(searchId);
-  if (!search) return null;
+  if (!search) throw notFoundError();
 
-  if (!search.isActive) throw new Error("Bu arama zaten bulunmuş");
+  if (!search.isActive) return search;
 
   search.isActive = false;
-  search.found = true;
-  search.stopReason = "FOUND";
+  if (found) search.found = true;
+  search.stopReason = stopReason;
   await search.save();
 
   return search;
 };
 
-export const stopSearch = async (searchId) => {
-  const search = await Search.findById(searchId);
-  if (!search) throw new Error("Arama bulunamadı");
+export const foundSearch = async (searchId) =>
+  closeSearch(searchId, "FOUND", { found: true });
 
-  if (!search.isActive) throw new Error("Bu arama zaten durdurulmuş");
+export const stopSearch = async (searchId) =>
+  closeSearch(searchId, "USER_STOP");
 
-  search.isActive = false;
-  search.stopReason = "USER_STOP";
-  await search.save();
+export const stopErrorSearch = async (searchId) =>
+  closeSearch(searchId, "ERROR");
 
-  return search;
-};
-
-export const stopErrorSearch = async (searchId) => {
-  const search = await Search.findById(searchId);
-  if (!search) throw new Error("Arama bulunamadı");
-
-  if (!search.isActive) throw new Error("Bu arama zaten durdurulmuş");
-
-  search.isActive = false;
-  search.stopReason = "ERROR";
-  await search.save();
-
-  return search;
-};
-
-export const stopDatePassedSearch = async (searchId) => {
-  const search = await Search.findById(searchId);
-  if (!search) throw new Error("Arama bulunamadı");
-
-  if (!search.isActive) throw new Error("Bu arama zaten durdurulmuş");
-
-  search.isActive = false;
-  search.stopReason = "DATE_PASSED";
-  await search.save();
-
-  return search;
-};
+export const stopDatePassedSearch = async (searchId) =>
+  closeSearch(searchId, "DATE_PASSED");

@@ -1,5 +1,8 @@
 export const parseTravelDate = (dateStr) => {
-  const match = dateStr.match(/^(\d{2}) (\d{2}) (\d{4})$/);
+  const match = String(dateStr ?? "")
+    .trim()
+    .match(/^(\d{2}) (\d{2}) (\d{4})$/);
+
   if (!match) return null;
 
   const day = Number(match[1]);
