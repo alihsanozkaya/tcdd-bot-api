@@ -146,9 +146,26 @@ const TR_DATE_FORMAT = new Intl.DateTimeFormat("tr-TR", {
   timeZone: "Europe/Istanbul",
 });
 
-function toValidDate(iso) {
-  const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? null : date;
+const HAS_TIME = /\d{1,2}:\d{2}/;
+const HAS_ZONE = /(z|[+-]\d{2}:?\d{2})$/i;
+
+function toValidDate(value) {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+
+  const candidates =
+    HAS_TIME.test(raw) && !HAS_ZONE.test(raw) ? [`${raw}Z`, raw] : [raw];
+
+  for (const candidate of candidates) {
+    const date = new Date(candidate);
+    if (!Number.isNaN(date.getTime())) return date;
+  }
+
+  return null;
 }
 
 function formatDuration(startISO, endISO) {
