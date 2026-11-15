@@ -1,12 +1,15 @@
 import express from "express";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import connectDB from "./config/database.js";
 import usersRoute from "./routes/users.js";
 import seatsRoute from "./routes/seats.js";
 import stationsRoute from "./routes/stations.js";
 import searchesRoute from "./routes/searches.js";
 
-dotenv.config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, ".env"), override: true });
 const app = express();
 app.use(express.json());
 

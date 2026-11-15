@@ -89,11 +89,18 @@ router.post("/preview", async (req, res) => {
     const upstreamStatus = err?.response?.status;
 
     if (upstreamStatus) {
-      console.error(`[preview] TCDD ${upstreamStatus} döndürdü`);
+      const upstreamMsg =
+        err?.response?.data?.message || err?.response?.data?.detail;
+      const errorMsg = upstreamMsg
+        ? `TCDD servisi ${upstreamStatus} döndürdü: ${upstreamMsg}`
+        : `TCDD servisi ${upstreamStatus} döndürdü`;
+
+      console.error(`[preview] ${errorMsg}`);
       return res.status(502).json({
-        message: `TCDD servisi ${upstreamStatus} döndürdü`,
+        message: errorMsg,
         code: "UPSTREAM_ERROR",
         upstreamStatus,
+        details: err?.response?.data,
       });
     }
 

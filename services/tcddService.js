@@ -1,4 +1,5 @@
 import axios from "axios";
+import crypto from "crypto";
 
 const ATTEMPT_TIMEOUT_MS = 12000;
 const MAX_ATTEMPTS = 2;
@@ -25,26 +26,44 @@ const isTransient = (err) => {
   return TRANSIENT_ERROR_CODES.has(err?.code);
 };
 
-const buildHeaders = () => ({
-  Accept: "application/json, text/plain, */*",
-  "Accept-Language": "tr",
-  Authorization: process.env.TCDD_TOKEN,
-  Connection: "keep-alive",
-  "Content-Type": "application/json",
-  Origin: "https://ebilet.tcddtasimacilik.gov.tr",
-  "Sec-Fetch-Dest": "empty",
-  "Sec-Fetch-Mode": "cors",
-  "Sec-Fetch-Site": "same-site",
-  Referer: "https://ebilet.tcddtasimacilik.gov.tr/",
-  "User-Agent":
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
-  "unit-id": "3895",
-  "sec-ch-ua":
-    '"Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"',
-  "sec-ch-ua-mobile": "?0",
-  "sec-ch-ua-platform": '"macOS"',
-  Cookie: "mycustomtraceid=rBiqDGm8ZXWjO4vaXsF5Ag==",
-});
+const buildHeaders = () => {
+  const xsrf = crypto.randomUUID();
+  const traceId = process.env.TCDD_TRACE_ID || "rBiqDGmPV14SfwaHBUYTAg==";
+  const cookieParts = [
+    `mycustomtraceid=${traceId}`,
+    `TMS-XSRF-TOKEN=${xsrf}`,
+  ];
+
+  const headers = {
+    Accept: "application/json, text/plain, */*",
+    "Accept-Language": "tr",
+    Authorization: process.env.TCDD_TOKEN,
+    Connection: "keep-alive",
+    "Content-Type": "application/json",
+    Cookie: cookieParts.join("; "),
+    Origin: "https://ebilet.tcddtasimacilik.gov.tr",
+    Referer: "https://ebilet.tcddtasimacilik.gov.tr/",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-site",
+    "User-Agent":
+      process.env.TCDD_USER_AGENT ||
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+    "X-TMS-XSRF-TOKEN": xsrf,
+    "sec-ch-ua":
+      process.env.TCDD_SEC_CH_UA ||
+      '"Not-A.Brand";v="99", "Google Chrome";v="157", "Chromium";v="157"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"macOS"',
+    "unit-id": "3895",
+  };
+
+  if (process.env.TCDD_CAPTCHA_SESSION) {
+    headers["captcha-session"] = process.env.TCDD_CAPTCHA_SESSION;
+  }
+
+  return headers;
+};
 
 export async function searchTrains({
   fromStationId,
@@ -75,6 +94,8 @@ export async function searchTrains({
       },
     ],
     passengerTypeCounts: [{ id: 0, count: 1 }],
+    searchReservation: false,
+    blTrainTypes: ["TURISTIK_TREN"],
   };
 
   let lastError;
